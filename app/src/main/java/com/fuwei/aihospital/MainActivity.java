@@ -29,20 +29,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.call_panel);
 //        EasyHttp.getInstance().setBaseUrl("http://wx.mypraise.cn");
         ipAdress = (ExtractEditText) findViewById(R.id.ip_address);
         responseResult = (TextView) findViewById(R.id.response);
     }
 
-    private void getApiVersion() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
 
-            }
-        }).start();
-    }
 
     private void register() {
         Map<String, String> param =new HashMap<>();
