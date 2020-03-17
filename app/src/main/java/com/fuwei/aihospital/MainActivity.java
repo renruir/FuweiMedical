@@ -2,10 +2,10 @@ package com.fuwei.aihospital;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.inputmethodservice.ExtractEditText;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,7 +21,7 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private final static String TAG = MainActivity.class.getName();
-    private ExtractEditText ipAdress;
+    private EditText ipAdress;
     private TextView responseResult;
     private final String ApiKey = "rO0ABXNyABlqYXZheC5jcnlwdG8uU2VhbGVkT2JqZWN0PjY9psO3VHACAARbAA1lbmNvZGVkUGFyYW1zdAACW0JbABBlbmNyeXB0ZWRDb250ZW50cQB+AAFMAAlwYXJhbXNBbGd0ABJMamF2YS9sYW5nL1N0cmluZztMAAdzZWFsQWxncQB+AAJ4cHB1cgACW0Ks8xf4BghU4AIAAHhwAAAAkJAG2WxF+ENknExl0IISiKLYKsbyPxb3w1ml+HJYL51evI5Bl20i/oqnAGZdPgs9mRBtcndNbZWUHNF6TdfgTPyxkh0wL/iQLji7ovJWkRn+bwSaV+kq/SRHUaqMQy7IOgj9b/x7DxwzxyhNxNBI4KO0A9snNtXgxLOdh4A74X87yE5Z6OJ7Bh7kndBbN5fDdnB0AANBRVM=";
     private String baseUrl;
@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.call_panel);
 //        EasyHttp.getInstance().setBaseUrl("http://wx.mypraise.cn");
-        ipAdress = (ExtractEditText) findViewById(R.id.ip_address);
+        ipAdress = (EditText) findViewById(R.id.ip_address);
         responseResult = (TextView) findViewById(R.id.response);
     }
 
