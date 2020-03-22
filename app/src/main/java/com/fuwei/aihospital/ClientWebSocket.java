@@ -1,5 +1,8 @@
 package com.fuwei.aihospital;
 
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSONObject;
@@ -27,7 +30,7 @@ import java.util.Map;
 public class ClientWebSocket {
     private static final String TAG = ClientWebSocket.class.getName();
 
-    public void linkSocket(String url, String token, final SocketMsgArrived socketMsg) throws URISyntaxException {
+    public void linkSocket(String url, String token, final SocketMsgArrived socketMsg, final Handler mHandler) throws URISyntaxException {
 
         Map<String, String> httpHeaders = new HashMap<String, String>();
         httpHeaders.put("Authorization", "Bearer " + token);
@@ -37,21 +40,30 @@ public class ClientWebSocket {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {
                     Log.i("onOpen:", "------连接成功!!!");
+                    mHandler.sendEmptyMessage(0);
                 }
 
                 @Override
                 public void onMessage(String message) {
                     Log.i("onMessage:", message);
+                    Message msg = Message.obtain();
+                    msg.what = 1;
+                    Bundle bundleData = new Bundle();
+                    bundleData.putString("msg", message);
+                    msg.setData(bundleData);
+                    mHandler.sendMessage(msg);
                     socketMsg.recMsg(message);
                 }
 
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
+                    mHandler.sendEmptyMessage(2);
                     Log.i("onClose:", "------连接关闭!!!" + reason);
                 }
 
                 @Override
                 public void onError(Exception ex) {
+                    mHandler.sendEmptyMessage(3);
                     Log.i("onError:", ex.toString());
                 }
             };
