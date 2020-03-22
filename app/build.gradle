@@ -14,6 +14,10 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    dataBinding {
+        enabled = true
+    }
+
     android.applicationVariants.all { variant ->
         variant.outputs.all {
             outputFileName = "FuweiMedical" + "_" + "V" + defaultConfig.versionName +"_"+ new Date().format("yyyyMMddhhss") + ".apk"
@@ -39,4 +43,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'com.zhouyou:rxeasyhttp:2.1.5'
     implementation 'com.alibaba:fastjson:1.2.54'
+    implementation "org.java-websocket:Java-WebSocket:1.4.0"
 }
