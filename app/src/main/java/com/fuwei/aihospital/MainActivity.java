@@ -1,10 +1,5 @@
 package com.fuwei.aihospital;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.databinding.BindingConversion;
-import androidx.databinding.DataBindingUtil;
-
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -17,6 +12,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.BindingConversion;
+import androidx.databinding.DataBindingUtil;
+
 import com.alibaba.fastjson.JSON;
 import com.fuwei.aihospital.databinding.CallPanelBinding;
 import com.zhouyou.http.EasyHttp;
@@ -24,9 +24,13 @@ import com.zhouyou.http.callback.SimpleCallBack;
 import com.zhouyou.http.exception.ApiException;
 
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -40,11 +44,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String token;
     private CallPanelBinding callPanelBinding;
 
-
-    private LinearLayout colorBlock;
-    private TextView callPosition;
-    private TextView callType;
-    private TextView testblock;
+    private boolean isAlarmState = false;
+    private SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
     private Handler mHandler = new Handler() {
         @Override
@@ -52,16 +53,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.handleMessage(msg);
             switch (msg.what) {
                 case 0:
-                    testblock.setText("连接成功");
+                    callPanelBinding.testblock.setText("连接成功");
                     break;
                 case 1:
-                    testblock.setText("收到消息："+msg.getData().getString("msg"));
+                    callPanelBinding.testblock.setText("收到消息：" + msg.getData().getString("msg"));
                     break;
                 case 2:
-                    testblock.setText("连接关闭");
+                    callPanelBinding.testblock.setText("连接关闭");
                     break;
                 case 3:
-                    testblock.setText("连接失败");
+                    callPanelBinding.testblock.setText("连接失败");
+                    break;
+                case 4:
+                    callPanelBinding.realTime.setText(sdf.format(new Date()));
+                    break;
+                case 5:
+                    updateState();
                     break;
             }
 
@@ -71,13 +78,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        setContentView(R.layout.call_panel);
         callPanelBinding = DataBindingUtil.setContentView(this, R.layout.call_panel);
-        testblock = (TextView) findViewById(R.id.testblock);
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
+        callPanelBinding.realTime.setText(sdf.format(new Date()));
+        updateTimer();
+        changeState(isAlarmState);
+//        testblock = (TextView) findViewById(R.id.testblock);
         EasyHttp.getInstance().setBaseUrl("https://172.20.20.129:9443");
         register();
-        AlarmDao alarmDao = new AlarmDao("#ed1941", "紧急", "十五区3床", "紧急", "123");
+        AlarmDao alarmDao = new AlarmDao("#ed1941", "TEST", "TEST", "TEST", "123");
         callPanelBinding.setAlarmDao(alarmDao);
+    }
+
+    private void updateTimer() {
+        Timer timer = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                mHandler.sendEmptyMessage(4);
+            }
+        };
+        timer.schedule(timerTask, 1000, 1000);
+    }
+
+
+    private void changeState(boolean isAlarmState) {
+        if (isAlarmState) {
+            callPanelBinding.alarmView.setVisibility(View.VISIBLE);
+            callPanelBinding.realTime.setVisibility(View.GONE);
+        } else {
+            callPanelBinding.alarmView.setVisibility(View.GONE);
+            callPanelBinding.realTime.setVisibility(View.VISIBLE);
+        }
     }
 
 
@@ -98,17 +130,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
                         Log.e(TAG, "注册错误！==: " + e.getMessage());
                         isRegisterSuccess = false;
-                        testblock.setText(e.getMessage());
+                        callPanelBinding.testblock.setText(e.getMessage());
                     }
 
                     @Override
                     public void onSuccess(String response) {
+                        Log.d(TAG, "onSuccess: " + response);
                         if (response != null) {
-                            Log.d(TAG, "注册成功，返回消息为: " + response);
-                            Toast.makeText(MainActivity.this, "register success", Toast.LENGTH_SHORT).show();
-                            isRegisterSuccess = true;
-                            if (response != null) {
-                                Map<String, Object> info = JSON.parseObject(response);
+                            Map<String, Object> info = JSON.parseObject(response);
+                            Log.d(TAG, "register result: " + info.get("status"));
+                            if ((boolean)info.get("status")) {
+                                Log.d(TAG, "注册成功，返回消息为: " + response);
+                                Toast.makeText(MainActivity.this, "register success", Toast.LENGTH_SHORT).show();
+                                isRegisterSuccess = true;
+
                                 token = info.get("token").toString();
                                 Log.d(TAG, "注册成功的token: " + token);
                                 subcribe(token);
@@ -130,19 +165,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onError(ApiException e) {
                         Log.e(TAG, "订阅错误！==: " + e.getMessage());
                         Toast.makeText(MainActivity.this, "subcribe error", Toast.LENGTH_SHORT).show();
-                        testblock.setText(e.getMessage());
+                        callPanelBinding.testblock.setText(e.getMessage());
                     }
 
                     @Override
                     public void onSuccess(String response) {
                         if (response != null) {
                             Log.d(TAG, "subcribe: " + response);
-                            Toast.makeText(MainActivity.this, "subcribe success", Toast.LENGTH_SHORT).show();
-                            try {
-                                ClientWebSocket client = new ClientWebSocket();
-                                client.linkSocket("wss://172.20.20.129:9443/ws/notifications", token, MainActivity.this, mHandler);
-                            } catch (URISyntaxException e) {
-                                e.printStackTrace();
+                            Map<String, Object> info = JSON.parseObject(response);
+                            Log.d(TAG, "subcribe result: " + info.get("status"));
+                            if ((boolean)info.get("status")) {
+                                Toast.makeText(MainActivity.this, "subcribe success", Toast.LENGTH_SHORT).show();
+                                try {
+                                    ClientWebSocket client = new ClientWebSocket();
+                                    client.linkSocket("wss://172.20.20.129:9443/ws/notifications", token, MainActivity.this, mHandler);
+                                } catch (URISyntaxException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
@@ -153,26 +192,61 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void recMsg(String msg) {
         Log.d(TAG, "rec socket Msg: " + msg);
-        if (msg != null && "".equals(msg)) {
-            Map<String, Object> socketMsg = JSON.parseObject(msg);
-            AlarmDao alarmDao = new AlarmDao();
-            alarmDao.setLocation(socketMsg.get("location").toString());
-            alarmDao.setCallType(socketMsg.get("type").toString());
-            alarmDao.setNotificationLevel(socketMsg.get("notificationLevel").toString());
-            alarmDao.setColor(socketMsg.get("color").toString());
-            alarmDao.setCallDuration(socketMsg.get("callDuration").toString());
-            callPanelBinding.setAlarmDao(alarmDao);
+        try {
+            if (msg != null && !"".equals(msg)) {
+                int idx = msg.indexOf("{");
+                if (idx >= 0) {
+                    msg = msg.substring(idx);
+                }
+                Log.d(TAG, "processed Msg: " + msg);
+                Map<String, Object> socketMsg = JSON.parseObject(msg);
+                Log.d(TAG, "location: " + socketMsg.get("location").toString());
+                Log.d(TAG, "type: " + socketMsg.get("type").toString());
+                Log.d(TAG, "notificationLevel: " + socketMsg.get("notificationLevel").toString());
+                Log.d(TAG, "color: " + socketMsg.get("color").toString());
+                Log.d(TAG, "callDuration: " + socketMsg.get("callDuration").toString());
+                Log.d(TAG, "transition: " + socketMsg.get("transition").toString());
+
+                if(socketMsg.get("transition").equals("START")){
+                    changeState(true);
+                    Message mMessage = Message.obtain();
+                    Bundle bundle = new Bundle();
+                    AlarmDao alarmDao = new AlarmDao();
+                    alarmDao.setLocation(socketMsg.get("location").toString());
+                    alarmDao.setCallType(socketMsg.get("type").toString());
+                    alarmDao.setNotificationLevel(socketMsg.get("notificationLevel").toString());
+                    alarmDao.setColor(socketMsg.get("color").toString());
+                    alarmDao.setCallDuration(socketMsg.get("callDuration").toString());
+
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
         }
+
+    }
+
+    void updateState(){
+        AlarmDao alarmDao = new AlarmDao();
+        alarmDao.setLocation(socketMsg.get("location").toString());
+        alarmDao.setCallType(socketMsg.get("type").toString());
+        alarmDao.setNotificationLevel(socketMsg.get("notificationLevel").toString());
+        alarmDao.setColor(socketMsg.get("color").toString());
+        alarmDao.setCallDuration(socketMsg.get("callDuration").toString());
+        callPanelBinding.setAlarmDao(alarmDao);
     }
 
     @Override
     public void onClick(View view) {
         int viewId = view.getId();
+        String msg = "{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.609-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"START\",\"endTime\":\"2020-03-17T12:24:51.574-05:00\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":false,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":343,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"RESET\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.581-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"RESEND\",\"endTime\":\"\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":true,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":344,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"PENDING\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":null,\"alarmDetail\":null},\"alarmDetail\":null}";
+        recMsg(msg);
     }
 
 
     @BindingConversion
     public static Drawable convertStringToDrawable(String str) {
+        Log.e(TAG, "convertStringToDrawable: "+str );
         return new ColorDrawable(Color.parseColor(str));
     }
 }
