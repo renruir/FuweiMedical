@@ -1,12 +1,11 @@
 package com.fuwei.aihospital;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import androidx.databinding.BaseObservable;
 import androidx.databinding.Bindable;
 
-public class AlarmDao extends BaseObservable  implements Parcelable {
+import java.io.Serializable;
+
+public class AlarmDao extends BaseObservable  implements Serializable {
     private String color;
     private String callType;
     private String location;
@@ -89,13 +88,4 @@ public class AlarmDao extends BaseObservable  implements Parcelable {
         return h + ":" + m + ":" + s;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel parcel, int i) {
-
-    }
 }

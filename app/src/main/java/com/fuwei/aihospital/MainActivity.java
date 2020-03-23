@@ -47,28 +47,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isAlarmState = false;
     private SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
 
+    private static final int UPDATE_TIME = 4;
+    private static final int UPDATE_ALARM = 5;
+    private static final int RESUME_TIME = 6;
+
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(@NonNull Message msg) {
             super.handleMessage(msg);
             switch (msg.what) {
-                case 0:
-                    callPanelBinding.testblock.setText("连接成功");
-                    break;
-                case 1:
-                    callPanelBinding.testblock.setText("收到消息：" + msg.getData().getString("msg"));
-                    break;
-                case 2:
-                    callPanelBinding.testblock.setText("连接关闭");
-                    break;
-                case 3:
-                    callPanelBinding.testblock.setText("连接失败");
-                    break;
-                case 4:
+//                case 0:
+//                    callPanelBinding.testblock.setText("连接成功");
+//                    break;
+//                case 1:
+//                    callPanelBinding.testblock.setText("收到消息：" + msg.getData().getString("msg"));
+//                    break;
+//                case 2:
+//                    callPanelBinding.testblock.setText("连接关闭");
+//                    break;
+//                case 3:
+//                    callPanelBinding.testblock.setText("连接失败");
+//                    break;
+                case UPDATE_TIME:
                     callPanelBinding.realTime.setText(sdf.format(new Date()));
                     break;
-                case 5:
-                    updateState();
+                case UPDATE_ALARM:
+                    updateState(msg.getData());
+                    break;
+                case RESUME_TIME:
+                    changeState(false);
                     break;
             }
 
@@ -83,7 +90,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         callPanelBinding.realTime.setText(sdf.format(new Date()));
         updateTimer();
         changeState(isAlarmState);
-//        testblock = (TextView) findViewById(R.id.testblock);
         EasyHttp.getInstance().setBaseUrl("https://172.20.20.129:9443");
         register();
         AlarmDao alarmDao = new AlarmDao("#ed1941", "TEST", "TEST", "TEST", "123");
@@ -95,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                mHandler.sendEmptyMessage(4);
+                mHandler.sendEmptyMessage(UPDATE_TIME);
             }
         };
         timer.schedule(timerTask, 1000, 1000);
@@ -130,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
                         Log.e(TAG, "注册错误！==: " + e.getMessage());
                         isRegisterSuccess = false;
-                        callPanelBinding.testblock.setText(e.getMessage());
+//                        callPanelBinding.testblock.setText(e.getMessage());
                     }
 
                     @Override
@@ -165,7 +171,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void onError(ApiException e) {
                         Log.e(TAG, "订阅错误！==: " + e.getMessage());
                         Toast.makeText(MainActivity.this, "subcribe error", Toast.LENGTH_SHORT).show();
-                        callPanelBinding.testblock.setText(e.getMessage());
+//                        callPanelBinding.testblock.setText(e.getMessage());
                     }
 
                     @Override
@@ -198,41 +204,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (idx >= 0) {
                     msg = msg.substring(idx);
                 }
-                Log.d(TAG, "processed Msg: " + msg);
                 Map<String, Object> socketMsg = JSON.parseObject(msg);
-                Log.d(TAG, "location: " + socketMsg.get("location").toString());
-                Log.d(TAG, "type: " + socketMsg.get("type").toString());
-                Log.d(TAG, "notificationLevel: " + socketMsg.get("notificationLevel").toString());
-                Log.d(TAG, "color: " + socketMsg.get("color").toString());
-                Log.d(TAG, "callDuration: " + socketMsg.get("callDuration").toString());
-                Log.d(TAG, "transition: " + socketMsg.get("transition").toString());
-
-                if(socketMsg.get("transition").equals("START")){
-                    changeState(true);
-                    Message mMessage = Message.obtain();
-                    Bundle bundle = new Bundle();
+                if(socketMsg.get("transition").equals("START") || socketMsg.get("transition").equals("ESCALATE")
+                    || socketMsg.get("transition").equals("RESEND")){
                     AlarmDao alarmDao = new AlarmDao();
                     alarmDao.setLocation(socketMsg.get("location").toString());
                     alarmDao.setCallType(socketMsg.get("type").toString());
                     alarmDao.setNotificationLevel(socketMsg.get("notificationLevel").toString());
                     alarmDao.setColor(socketMsg.get("color").toString());
                     alarmDao.setCallDuration(socketMsg.get("callDuration").toString());
-
+                    Message mMessage = Message.obtain();
+                    Bundle bundle = new Bundle();
+                    bundle.putSerializable("newAlarm", alarmDao);
+                    mMessage.setData(bundle);
+                    mMessage.what = UPDATE_ALARM;
+                    mHandler.sendMessage(mMessage);
+                } else if(socketMsg.get("transition").equals("CANCEL")){
+                    mHandler.sendEmptyMessage(RESUME_TIME);
                 }
             }
         } catch (Exception e){
             e.printStackTrace();
         }
-
     }
 
-    void updateState(){
-        AlarmDao alarmDao = new AlarmDao();
-        alarmDao.setLocation(socketMsg.get("location").toString());
-        alarmDao.setCallType(socketMsg.get("type").toString());
-        alarmDao.setNotificationLevel(socketMsg.get("notificationLevel").toString());
-        alarmDao.setColor(socketMsg.get("color").toString());
-        alarmDao.setCallDuration(socketMsg.get("callDuration").toString());
+    private void updateState(Bundle bundle){
+        if(bundle == null){
+            return;
+        }
+        changeState(true);
+        AlarmDao alarmDao = (AlarmDao)bundle.getSerializable("newAlarm");
+        Log.d(TAG, "new alarm: " + alarmDao.getLocation());
         callPanelBinding.setAlarmDao(alarmDao);
     }
 
