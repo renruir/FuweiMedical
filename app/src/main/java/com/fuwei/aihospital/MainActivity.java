@@ -85,8 +85,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         callPanelBinding = DataBindingUtil.setContentView(this, R.layout.call_panel);
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
         callPanelBinding.realTime.setText(sdf.format(new Date()));
         updateTimer();
         changeState(isAlarmState);
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         if (response != null) {
                             Map<String, Object> info = JSON.parseObject(response);
                             Log.d(TAG, "register result: " + info.get("status"));
-                            if ((boolean)info.get("status")) {
+                            if ((boolean) info.get("status")) {
                                 Log.d(TAG, "注册成功，返回消息为: " + response);
                                 Toast.makeText(MainActivity.this, "register success", Toast.LENGTH_SHORT).show();
                                 isRegisterSuccess = true;
@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             Log.d(TAG, "subcribe: " + response);
                             Map<String, Object> info = JSON.parseObject(response);
                             Log.d(TAG, "subcribe result: " + info.get("status"));
-                            if ((boolean)info.get("status")) {
+                            if ((boolean) info.get("status")) {
                                 Toast.makeText(MainActivity.this, "subcribe success", Toast.LENGTH_SHORT).show();
                                 try {
                                     ClientWebSocket client = new ClientWebSocket();
@@ -205,8 +205,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     msg = msg.substring(idx);
                 }
                 Map<String, Object> socketMsg = JSON.parseObject(msg);
-                if(socketMsg.get("transition").equals("START") || socketMsg.get("transition").equals("ESCALATE")
-                    || socketMsg.get("transition").equals("RESEND")){
+                if (socketMsg.get("transition").equals("START") || socketMsg.get("transition").equals("ESCALATE")
+                        || socketMsg.get("transition").equals("RESEND")) {
                     AlarmDao alarmDao = new AlarmDao();
                     alarmDao.setLocation(socketMsg.get("location").toString());
                     alarmDao.setCallType(socketMsg.get("type").toString());
@@ -219,21 +219,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     mMessage.setData(bundle);
                     mMessage.what = UPDATE_ALARM;
                     mHandler.sendMessage(mMessage);
-                } else if(socketMsg.get("transition").equals("CANCEL")){
+                } else if (socketMsg.get("transition").equals("CANCEL")) {
                     mHandler.sendEmptyMessage(RESUME_TIME);
                 }
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void updateState(Bundle bundle){
-        if(bundle == null){
+    private void updateState(Bundle bundle) {
+        if (bundle == null) {
             return;
         }
         changeState(true);
-        AlarmDao alarmDao = (AlarmDao)bundle.getSerializable("newAlarm");
+        AlarmDao alarmDao = (AlarmDao) bundle.getSerializable("newAlarm");
         Log.d(TAG, "new alarm: " + alarmDao.getLocation());
         callPanelBinding.setAlarmDao(alarmDao);
     }
@@ -248,7 +248,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @BindingConversion
     public static Drawable convertStringToDrawable(String str) {
-        Log.e(TAG, "convertStringToDrawable: "+str );
+        Log.e(TAG, "convertStringToDrawable: " + str);
         return new ColorDrawable(Color.parseColor(str));
     }
+
+
 }

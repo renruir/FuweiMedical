@@ -5,11 +5,15 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.alibaba.fastjson.JSONObject;
 
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
+import org.java_websocket.framing.PingFrame;
+import org.java_websocket.framing.PongFrame;
 import org.java_websocket.handshake.ServerHandshake;
 
 import javax.net.ssl.SSLContext;
@@ -24,11 +28,16 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.sql.Time;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class ClientWebSocket {
     private static final String TAG = ClientWebSocket.class.getName();
+    private Timer pingTimer;
+    private WebSocketClient client;
 
     public void linkSocket(String url, String token, final SocketMsgArrived socketMsg, final Handler mHandler) throws URISyntaxException {
 
@@ -36,11 +45,19 @@ public class ClientWebSocket {
         httpHeaders.put("Authorization", "Bearer " + token);
         Log.i("header:", "Bearer " + token);
         try {
-            WebSocketClient client = new WebSocketClient(new URI(url), new Draft_6455(), httpHeaders, 20000) {
+            client = new WebSocketClient(new URI(url), new Draft_6455(), httpHeaders, 20000) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {
                     Log.i("onOpen:", "------连接成功!!!");
                     mHandler.sendEmptyMessage(0);
+                    Timer pingTimer = new Timer( );
+                    TimerTask task = new TimerTask( ) {
+                        public void run () {
+                            Log.d(TAG, "send a ping packet");
+                            sendPing();
+                        }
+                    };
+                    pingTimer.schedule(task, 1000, 5*60*1000);
                 }
 
                 @Override
@@ -59,6 +76,7 @@ public class ClientWebSocket {
                 public void onClose(int code, String reason, boolean remote) {
                     mHandler.sendEmptyMessage(2);
                     Log.i("onClose:", "------连接关闭!!!" + reason);
+
                 }
 
                 @Override
@@ -88,13 +106,9 @@ public class ClientWebSocket {
             Log.i(TAG, "开始connect");
             client.connect();
             Log.i(TAG, "状态：" + client.getReadyState());
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (KeyManagementException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (Exception e) {
+            Log.d(TAG, "========Websocket Exception=====");
+            client.reconnect();
             e.printStackTrace();
         }
 
