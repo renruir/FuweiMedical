@@ -102,8 +102,13 @@
                         android:background="#FF9800" />
 
                 </LinearLayout>
-
             </LinearLayout>
+            <ImageView
+                android:id="@+id/setting"
+                android:layout_width="180px"
+                android:layout_height="180px"
+                android:layout_margin="20px"
+                android:onClick="onClick"/>
         </FrameLayout>
 
 <!--        <TextView-->

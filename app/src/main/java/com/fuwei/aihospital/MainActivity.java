@@ -1,5 +1,8 @@
 package com.fuwei.aihospital;
 
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -8,11 +11,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.BindingConversion;
 import androidx.databinding.DataBindingUtil;
@@ -28,7 +31,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isRegisterSuccess = false;
     private String token;
     private CallPanelBinding callPanelBinding;
+    private String ip;
 
     private boolean isAlarmState = false;
     private SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
@@ -50,6 +53,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int UPDATE_TIME = 4;
     private static final int UPDATE_ALARM = 5;
     private static final int RESUME_TIME = 6;
+
+    private static final String SETTING_FILE_NAME = "setting.properties";
+    private static final String IP_ADDRESS = "ip";
+
 
     private Handler mHandler = new Handler() {
         @Override
@@ -85,12 +92,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         callPanelBinding = DataBindingUtil.setContentView(this, R.layout.call_panel);
         callPanelBinding.realTime.setText(sdf.format(new Date()));
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ip = getHostFromShare();
+        Log.d(TAG, "host ip: " + ip);
+        if (ip == null || "".equals(ip)) {
+            Toast.makeText(this, "ip address is null!", Toast.LENGTH_SHORT).show();
+            return;
+        }
         updateTimer();
         changeState(isAlarmState);
-        EasyHttp.getInstance().setBaseUrl("https://172.20.20.129:9443");
+        EasyHttp.getInstance().setBaseUrl("https://" + ip + ":9443");
         register();
         AlarmDao alarmDao = new AlarmDao("#ed1941", "TEST", "TEST", "TEST", "123");
         callPanelBinding.setAlarmDao(alarmDao);
@@ -106,7 +124,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         };
         timer.schedule(timerTask, 1000, 1000);
     }
-
 
     private void changeState(boolean isAlarmState) {
         if (isAlarmState) {
@@ -184,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 Toast.makeText(MainActivity.this, "subcribe success", Toast.LENGTH_SHORT).show();
                                 try {
                                     ClientWebSocket client = new ClientWebSocket();
-                                    client.linkSocket("wss://172.20.20.129:9443/ws/notifications", token, MainActivity.this, mHandler);
+                                    client.linkSocket("wss://" + ip + ":9443/ws/notifications", token, MainActivity.this, mHandler);
                                 } catch (URISyntaxException e) {
                                     e.printStackTrace();
                                 }
@@ -241,8 +258,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View view) {
         int viewId = view.getId();
-        String msg = "{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.609-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"START\",\"endTime\":\"2020-03-17T12:24:51.574-05:00\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":false,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":343,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"RESET\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.581-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"RESEND\",\"endTime\":\"\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":true,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":344,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"PENDING\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":null,\"alarmDetail\":null},\"alarmDetail\":null}";
-        recMsg(msg);
+        switch (viewId) {
+            case R.id.setting:
+                modifyIPDialog();
+                break;
+        }
+//        String msg = "{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.609-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"START\",\"endTime\":\"2020-03-17T12:24:51.574-05:00\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":false,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":343,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"RESET\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":{\"id\":\"574272274986583_~_0_~_100.1.1.0_~_172.20.20.129\",\"type\":\"Patient Call\",\"color\":\"#FFFF00\",\"location\":\"Austco.Building 1.Floor 1.Ward 1.Room 1.Bed\",\"startTime\":\"2020-03-17T12:19:07.581-05:00\",\"priority\":2,\"escalation\":0,\"extension\":\"2010\",\"connector\":\"172.20.20.129\",\"eventId\":574272274986583,\"transition\":\"RESEND\",\"endTime\":\"\",\"acknowledgedBy\":\"\",\"acknowledgeMessage\":\"\",\"activated\":true,\"assetId\":\"-1\",\"assetName\":\"\",\"additionalAssets\":[],\"callDuration\":344,\"chime\":\"bing-bong_660-1_550-2_20\",\"cpid\":\"100.1.1.0\",\"generatedBy\":null,\"identification\":\"ERR1\",\"localReset\":true,\"model\":\"Integration\",\"notificationLevel\":0,\"notifiedDevices\":[\"_m667644951919600\"],\"notifiedDeviceIds\":[\"TSNS1\"],\"notifiedGroups\":[\"\"],\"rejectedBy\":[],\"sourceLocation\":\"\",\"state\":\"PENDING\",\"locationStructure\":{\"names\":\"SITE.BUILDING.FLOOR.WARD.ROOM.BED\",\"levels\":\"0.3.5.6.9.11\"},\"oldAlarmState\":null,\"alarmDetail\":null},\"alarmDetail\":null}";
+//        recMsg(msg);
+    }
+
+    private void modifyIPDialog() {
+        final EditText et = new EditText(this);
+        new AlertDialog.Builder(this).setTitle("Please input new ip address: ")
+                .setIcon(android.R.drawable.sym_def_app_icon)
+                .setView(et)
+                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Toast.makeText(getApplicationContext(), et.getText().toString(), Toast.LENGTH_LONG).show();
+                        setHostToShare(et.getText().toString());
+                    }
+                }).setNegativeButton("Cancel", null).show();
+
+    }
+
+    private String getHostFromShare() {
+        SharedPreferences sharedPreferences = getSharedPreferences("setting", Context.MODE_PRIVATE);
+        String host =sharedPreferences.getString("host","172.20.20.129");
+        return host;
+    }
+
+    public void setHostToShare(String host) {
+        SharedPreferences sharedPreferences = getSharedPreferences("setting", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("host", host);
+        editor.commit();
     }
 
 
