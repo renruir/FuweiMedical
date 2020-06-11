@@ -34,6 +34,8 @@ public class ClientWebSocket {
     private static final String TAG = ClientWebSocket.class.getName();
     private Timer pingTimer;
     private WebSocketClient client;
+    private SSLContext sslContext;
+    private TrustManager[] trustAllCerts;
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// HH:mm:ss
 
     public void linkSocket(final Context context, String url, String token, final SocketMsgArrived socketMsg) {
@@ -51,23 +53,38 @@ public class ClientWebSocket {
                     Timer pingTimer = new Timer();
                     TimerTask task = new TimerTask() {
                         public void run() {
-                            Log.d(TAG, "send a ping packet");
-                            client.sendPing();
+                            Log.d(TAG, "socket connect status: " + client.isClosed());
+                            try {
+                                if (client.isClosed() || client.isClosing()) {
+                                    Log.d(TAG, "socket is closed， reconnect");
+                                    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+                                    SSLSocketFactory factory = sslContext.getSocketFactory();
+                                    client.setSocket(factory.createSocket());
+                                    Log.i(TAG, " start connect");
+                                    client.connect();
+                                } else {
+                                    Log.d(TAG, "socket is connected, send ping");
+                                    client.sendPing();
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
                         }
                     };
-                    pingTimer.schedule(task, 1000, 5 *  1000);
+                    pingTimer.schedule(task, 1000, 5 * 1000);
                 }
 
                 @Override
                 public void onWebsocketPing(WebSocket conn, Framedata f) {
                     super.onWebsocketPing(conn, f);
                     Log.d(TAG, "onWebsocketPing: " + f.getOpcode().name());
+//                    client.sendPing();
                 }
 
                 @Override
                 public void onWebsocketPong(WebSocket conn, Framedata f) {
                     super.onWebsocketPong(conn, f);
-                    Log.d(TAG, "onWebsocketPing: " + f.getOpcode().name());
+                    Log.d(TAG, "onWebsocketPong: " + f.getOpcode().name());
                 }
 
                 @Override
@@ -92,7 +109,7 @@ public class ClientWebSocket {
                 @Override
                 public void onClose(int code, String reason, boolean remote) {
 //                    mHandler.sendEmptyMessage(2);
-                    Log.i(TAG, "------socket close， code: " + code + ", reason: " + reason);
+                    Log.i(TAG, "------socket close， code: " + code + ", reason: " + reason +", remote："+ remote);
                     Log.d(TAG, "onClose time: " + simpleDateFormat.format(new Date()));
                 }
 
@@ -104,8 +121,8 @@ public class ClientWebSocket {
                 }
             };
             // wss需添加
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+            sslContext = SSLContext.getInstance("TLS");
+            trustAllCerts = new TrustManager[]{new X509TrustManager() {
                 public X509Certificate[] getAcceptedIssuers() {
                     return new X509Certificate[]{};
                 }
