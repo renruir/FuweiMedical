@@ -23,6 +23,8 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".SocketService"></service>
+
         <receiver
             android:name=".BootCompletedReceiver"
             android:enabled="true"
