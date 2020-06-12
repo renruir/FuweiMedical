@@ -57,9 +57,9 @@ public class ClientWebSocket {
                             try {
                                 if (client.isClosed() || client.isClosing()) {
                                     Log.d(TAG, "socket is closed， reconnect");
-                                    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-                                    SSLSocketFactory factory = sslContext.getSocketFactory();
-                                    client.setSocket(factory.createSocket());
+//                                    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+//                                    SSLSocketFactory factory = sslContext.getSocketFactory();
+//                                    client.setSocket(factory.createSocket());
                                     Log.i(TAG, " start connect");
                                     client.connect();
                                 } else {
