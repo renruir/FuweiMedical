@@ -38,16 +38,20 @@ public class ClientWebSocket {
     private TrustManager[] trustAllCerts;
     private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// HH:mm:ss
 
-    public void linkSocket(final Context context, String url, String token, final SocketMsgArrived socketMsg) {
+//    public void linkSocket(final Context context, String url, String token, final SocketMsgArrived socketMsg) {
+    public void linkSocket(final Context context, String url, String token, final SocketMsgCallBack socketMsg) {
 
         Map<String, String> httpHeaders = new HashMap<String, String>();
         httpHeaders.put("Authorization", "Bearer " + token);
         Log.i("header:", "Bearer " + token);
+
         try {
+            if(client != null) {
+                client.closeBlocking();
+            }
             client = new WebSocketClient(new URI(url), new Draft_6455(), httpHeaders, 20000) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {
-                    Log.i(TAG, "onOpen------连接成功!!!");
                     Log.d(TAG, "onOpen time: " + simpleDateFormat.format(new Date()));
 //                    mHandler.sendEmptyMessage(0);
                     Timer pingTimer = new Timer();
@@ -56,7 +60,6 @@ public class ClientWebSocket {
                             Log.d(TAG, "socket connect status: " + client.isClosed());
                             try {
                                 if (client.isClosed() || client.isClosing()) {
-                                    Log.d(TAG, "socket is closed， reconnect");
 //                                    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 //                                    SSLSocketFactory factory = sslContext.getSocketFactory();
 //                                    client.setSocket(factory.createSocket());
@@ -103,7 +106,8 @@ public class ClientWebSocket {
 //                    intent.putExtra("newmsg", bundleData);
 //                    context.sendBroadcast(intent);
 
-                    socketMsg.recMsg(message);
+//                    socketMsg.recMsg(message);
+                    socketMsg.onMsgArrive(message);
                 }
 
                 @Override
@@ -116,7 +120,7 @@ public class ClientWebSocket {
                 @Override
                 public void onError(Exception ex) {
 //                    mHandler.sendEmptyMessage(3);
-                    Log.i(TAG, "onError: " + ex.toString());
+                    Log.i(TAG, "onError: " + ex.getMessage());
                     Log.d(TAG, "onError time: " + simpleDateFormat.format(new Date()));
                 }
             };

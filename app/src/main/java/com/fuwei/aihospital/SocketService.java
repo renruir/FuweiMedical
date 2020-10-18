@@ -16,6 +16,7 @@ public class SocketService extends Service implements SocketMsgArrived {
     private String ip;
     private String token;
     private MsgCallback msgCallback;
+    private SocketMsgCallBack socketMsgCallBack;
 
     @Nullable
     @Override
@@ -35,6 +36,11 @@ public class SocketService extends Service implements SocketMsgArrived {
     @Override
     public void recMsg(String msg) {
         getMsgCallback().onMsgArrive(msg);
+        socketMsgCallBack.onMsgArrive(msg);
+    }
+
+    public void setSocketMsgCallBack(SocketMsgCallBack callBack){
+        this.socketMsgCallBack = callBack;
     }
 
     public interface MsgCallback {
@@ -70,7 +76,8 @@ public class SocketService extends Service implements SocketMsgArrived {
             super.run();
             try {
                 ClientWebSocket client = new ClientWebSocket();
-                client.linkSocket(SocketService.this, "wss://" + socketIP + ":9443/ws/notifications", mToken, SocketService.this);
+                client.linkSocket(SocketService.this,
+                        "wss://" + socketIP + ":9443/ws/notifications", mToken, socketMsgCallBack);
             } catch (Exception e) {
                 e.printStackTrace();
             }

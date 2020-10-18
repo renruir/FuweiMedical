@@ -13,13 +13,13 @@
 
             <TextView
                 android:id="@+id/real_time"
-                android:text="12:34:45"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:textSize="120dp"
+                android:text="12:34:45"
                 android:textColor="#000"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:textSize="120dp" />
 
 
             <LinearLayout
@@ -98,33 +98,45 @@
                         android:layout_width="80px"
                         android:layout_height="80px"
                         android:layout_marginTop="20px"
-                        android:onClick="onClick"
-                        android:background="#FF9800" />
+                        android:background="#FF9800"
+                        android:onClick="onClick" />
 
                 </LinearLayout>
             </LinearLayout>
+
             <ImageView
                 android:id="@+id/setting"
                 android:layout_width="180px"
                 android:layout_height="180px"
                 android:layout_margin="20px"
-                android:onClick="onClick"/>
+                android:onClick="onClick" />
         </FrameLayout>
 
         <TextView
             android:id="@+id/testblock"
             android:layout_width="1920px"
-            android:layout_height="360px"
-            android:text="dddddafd"
-            android:visibility="gone"
+            android:layout_height="400px"
+            android:text="这里会显示收到的信息或者异常"
+            android:scrollbars="vertical"
+            android:singleLine="false"
             android:textColor="#000000" />
 
-<!--        <Button-->
-<!--            android:layout_width="80px"-->
-<!--            android:layout_height="80px"-->
-<!--            android:layout_marginTop="20px"-->
-<!--            android:onClick="onClick"-->
-<!--            android:background="#FF9800" />-->
+        <TextView
+            android:id="@+id/registerInfo"
+            android:layout_width="1920px"
+            android:layout_height="360px"
+            android:text="这里会显示注册信息"
+            android:scrollbars="vertical"
+            android:singleLine="false"
+            android:textColor="#EC0202" />
+
+
+        <!--        <Button-->
+        <!--            android:layout_width="80px"-->
+        <!--            android:layout_height="80px"-->
+        <!--            android:layout_marginTop="20px"-->
+        <!--            android:onClick="onClick"-->
+        <!--            android:background="#FF9800" />-->
     </LinearLayout>
 
     <data>

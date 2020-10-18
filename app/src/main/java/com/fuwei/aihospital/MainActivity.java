@@ -44,7 +44,7 @@ import java.util.TimerTask;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, SocketMsgCallBack {
 
     private final static String TAG = MainActivity.class.getName();
     private final String ApiKey = "rO0ABXNyABlqYXZheC5jcnlwdG8uU2VhbGVkT2JqZWN0PjY9psO3VHACAARbAA1lbmNvZGVkUGFyYW1zdAACW0JbABBlbmNyeXB0ZWRDb250ZW50cQB+AAFMAAlwYXJhbXNBbGd0ABJMamF2YS9sYW5nL1N0cmluZztMAAdzZWFsQWxncQB+AAJ4cHB1cgACW0Ks8xf4BghU4AIAAHhwAAAAkJAG2WxF+ENknExl0IISiKLYKsbyPxb3w1ml+HJYL51evI5Bl20i/oqnAGZdPgs9mRBtcndNbZWUHNF6TdfgTPyxkh0wL/iQLji7ovJWkRn+bwSaV+kq/SRHUaqMQy7IOgj9b/x7DxwzxyhNxNBI4KO0A9snNtXgxLOdh4A74X87yE5Z6OJ7Bh7kndBbN5fDdnB0AANBRVM=";
@@ -120,16 +120,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         callPanelBinding = DataBindingUtil.setContentView(this, R.layout.call_panel);
         callPanelBinding.realTime.setText(sdf.format(new Date()));
 //        initBroadCast();
-    }
 
-    private void initBroadCast() {
-        IntentFilter intentFilter = new IntentFilter("com.fuweimedical.updatemsg");
-        registerReceiver(mReceiver, intentFilter);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
         ip = getHostFromShare();
         Log.d(TAG, "host ip: " + ip);
         if (ip == null || "".equals(ip)) {
@@ -140,7 +131,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         updateTimer();
         changeState(isAlarmState);
+    }
 
+    private void initBroadCast() {
+        IntentFilter intentFilter = new IntentFilter("com.fuweimedical.updatemsg");
+        registerReceiver(mReceiver, intentFilter);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     private void init() {
@@ -148,9 +148,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        EasyHttp.getInstance().setBaseUrl("https://172.20.20.129:9443")
                 .setRetryCount(0)
                 .setConnectTimeout(10 * 100);
-        register();
+        startRegister();
         AlarmDao alarmDao = new AlarmDao("#ed1941", "TEST", "TEST", "TEST", "123");
         callPanelBinding.setAlarmDao(alarmDao);
+    }
+
+    private void startRegister() {
+        Timer timer = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                register();
+            }
+        };
+        timer.schedule(timerTask, 1000, 60 * 60 * 1000);
+    }
+
+    @Override
+    public void onMsgArrive(String msg) {
+        Log.d(TAG, "new onMsgArrive: " + msg);
+        recMsg(msg);
     }
 
     private class MyMsgConnection implements ServiceConnection {
@@ -161,13 +178,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             msgBinder = (SocketService.MsgBinder) service;
             msgBinder.initSocket();
             SocketService socketService = msgBinder.getService();
-            socketService.setMsgCallback(new SocketService.MsgCallback() {
-                @Override
-                public void onMsgArrive(String msg) {
-                    Log.d(TAG, "onMsgArrive: " + msg);
-                    recMsg(msg);
-                }
-            });
+            socketService.setSocketMsgCallBack(MainActivity.this);
+//            socketService.setMsgCallback(new SocketService.MsgCallback() {
+//                @Override
+//                public void onMsgArrive(String msg) {
+//                    Log.d(TAG, "onMsgArrive: " + msg);
+//                    recMsg(msg);
+//                }
+//            });
         }
 
         @Override
@@ -216,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                             Log.e(TAG, "注册错误！==: " + e.getMessage());
                             isRegisterSuccess = false;
-                            callPanelBinding.testblock.setText(e.getMessage());
+                            callPanelBinding.registerInfo.setText("注册错误：" + e.getMessage() + "\n time: " + sdf.format(new Date(System.currentTimeMillis())));
                         }
 
                         @Override
@@ -225,6 +243,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             if (response != null) {
                                 Map<String, Object> info = JSON.parseObject(response);
                                 Log.d(TAG, "register result: " + info.get("status"));
+
                                 if ((boolean) info.get("status")) {
                                     Log.d(TAG, "注册成功，返回消息为: " + response);
                                     Toast.makeText(MainActivity.this, "register success", Toast.LENGTH_SHORT).show();
@@ -232,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                                     token = info.get("token").toString();
                                     Log.d(TAG, "注册成功的token: " + token);
+                                    callPanelBinding.registerInfo.setText("time: " + sdf.format(new Date(System.currentTimeMillis()))
+                                            + "\n token: " + token);
                                     subcribe(token);
                                 }
                             }
@@ -293,6 +314,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void recMsg(String msg) {
         Log.d(TAG, "rec socket Msg: " + msg);
+//        callPanelBinding.testblock.setText("time: " + sdf.format(new Date(System.currentTimeMillis()) + "\n msg: " + msg));
         try {
             if (msg != null && !"".equals(msg)) {
                 int idx = msg.indexOf("{");
